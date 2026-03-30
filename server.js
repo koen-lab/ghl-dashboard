@@ -7,7 +7,11 @@ const { Pool } = require('pg');
 const PORT = process.env.PORT || 3000;
 const API_KEY = process.env.GHL_API_KEY;
 const LOCATION_ID = process.env.GHL_LOCATION_ID;
-const TAG_DEMO = process.env.TAG_DEMO || 'demo';
+
+// Custom Value IDs from GHL
+const CV_PITCH    = 'q6ZyybZZwmC7uQS5abP1';
+const CV_EXPLAINER = 'TezVlG1RySPuXPPICHCy';
+const CV_DEMO     = 'qJM60fohvyFE2DV1otMl';
 
 const pool = process.env.DATABASE_URL ? new Pool({
   connectionString: process.env.DATABASE_URL,
@@ -21,7 +25,7 @@ async function setupDb() {
       id SERIAL PRIMARY KEY,
       captured_at TIMESTAMPTZ DEFAULT NOW(),
       pitches INT,
-      responses INT,
+      explainers INT,
       demos INT
     )
   `);
@@ -52,20 +56,38 @@ function ghlRequest(urlPath) {
   });
 }
 
-async function getCustomValues() {
-  const data = await ghlRequest(`/locations/${LOCATION_ID}/customValues`);
-  return data.customValues || [];
+async function getCustomValue(id) {
+  const data = await ghlRequest(`/locations/${LOCATION_ID}/customValues/${id}`);
+  const val = (data.customValue || {}).value;
+  return parseInt(val) || 0;
+}
+
+async function getCounts() {
+  const [pitches, explainers, demos] = await Promise.all([
+    getCustomValue(CV_PITCH),
+    getCustomValue(CV_EXPLAINER),
+    getCustomValue(CV_DEMO)
+  ]);
+  return { pitches, explainers, demos };
 }
 
 async function getHistory() {
   if (!pool) return [];
   const res = await pool.query(`
-    SELECT captured_at, pitches, responses, demos
+    SELECT captured_at, pitches, explainers, demos
     FROM snapshots
     ORDER BY captured_at DESC
     LIMIT 30
   `);
   return res.rows;
+}
+
+async function saveSnapshot(pitches, explainers, demos) {
+  if (!pool) return;
+  await pool.query(
+    'INSERT INTO snapshots (pitches, explainers, demos) VALUES ($1, $2, $3)',
+    [pitches, explainers, demos]
+  );
 }
 
 const server = http.createServer(async (req, res) => {
@@ -77,23 +99,12 @@ const server = http.createServer(async (req, res) => {
     return res.end(file);
   }
 
-  // Shows all custom values so we can find the right IDs
-  if (url.pathname === '/api/debug') {
-    try {
-      const customValues = await getCustomValues();
-      res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify(customValues, null, 2));
-    } catch (e) {
-      res.writeHead(500, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ error: e.message }));
-    }
-  }
-
   if (url.pathname === '/api/counts') {
     try {
-      const customValues = await getCustomValues();
+      const { pitches, explainers, demos } = await getCounts();
+      await saveSnapshot(pitches, explainers, demos);
       res.writeHead(200, { 'Content-Type': 'application/json' });
-      return res.end(JSON.stringify({ customValues, ts: new Date().toISOString() }));
+      return res.end(JSON.stringify({ pitches, explainers, demos, ts: new Date().toISOString() }));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));
@@ -105,6 +116,18 @@ const server = http.createServer(async (req, res) => {
       const rows = await getHistory();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(rows));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  // Debug
+  if (url.pathname === '/api/debug') {
+    try {
+      const counts = await getCounts();
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify(counts, null, 2));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));
