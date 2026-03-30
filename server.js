@@ -29,7 +29,7 @@ async function setupDb() {
   `);
 }
 
-async function fetchGHL(urlPath) {
+function ghlRequest(urlPath) {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'services.leadconnectorhq.com',
@@ -46,7 +46,7 @@ async function fetchGHL(urlPath) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve(JSON.parse(data)); }
-        catch(e) { reject(new Error('Parse error: ' + data.slice(0, 200))); }
+        catch(e) { reject(new Error('Parse error: ' + data.slice(0, 300))); }
       });
     });
     req.on('error', reject);
@@ -54,29 +54,62 @@ async function fetchGHL(urlPath) {
   });
 }
 
+// Fetch all contacts in a workflow using the dedicated workflow contacts endpoint
 async function fetchWorkflowCount(workflowId) {
-  let total = 0, skip = 0;
-  const limit = 100;
+  let total = 0;
+  let startAfter = null;
+  let startAfterId = null;
+
   while (true) {
-    const data = await fetchGHL(`/contacts/?locationId=${LOCATION_ID}&workflowId=${workflowId}&limit=${limit}&skip=${skip}`);
-    const contacts = data.contacts || [];
+    let urlPath = `/contacts/search/duplicate?locationId=${LOCATION_ID}&limit=100`;
+
+    // Try the workflow-specific endpoint instead
+    let path = `/workflows/${workflowId}/contacts?locationId=${LOCATION_ID}&limit=100`;
+    if (startAfter) path += `&startAfter=${startAfter}&startAfterId=${startAfterId}`;
+
+    const data = await ghlRequest(path);
+
+    // Handle different response shapes
+    const contacts = data.contacts || data.data || [];
     total += contacts.length;
-    if (contacts.length < limit) break;
-    skip += limit;
+
+    const meta = data.meta || {};
+    if (!meta.nextPageUrl || contacts.length < 100) break;
+
+    startAfter = meta.startAfter;
+    startAfterId = meta.startAfterId;
   }
+
   return total;
 }
 
+// Fetch all contacts and filter by tag client-side
 async function fetchTagCount(tag) {
-  let total = 0, skip = 0;
-  const limit = 100;
+  let total = 0;
+  let startAfter = null;
+  let startAfterId = null;
+
   while (true) {
-    const data = await fetchGHL(`/contacts/?locationId=${LOCATION_ID}&tags[]=${encodeURIComponent(tag)}&limit=${limit}&skip=${skip}`);
+    let urlPath = `/contacts/?locationId=${LOCATION_ID}&limit=100`;
+    if (startAfter) urlPath += `&startAfter=${startAfter}&startAfterId=${startAfterId}`;
+
+    const data = await ghlRequest(urlPath);
     const contacts = data.contacts || [];
-    total += contacts.length;
-    if (contacts.length < limit) break;
-    skip += limit;
+
+    for (const contact of contacts) {
+      const tags = contact.tags || [];
+      if (tags.map(t => t.toLowerCase()).includes(tag.toLowerCase())) {
+        total++;
+      }
+    }
+
+    const meta = data.meta || {};
+    if (!meta.nextPageUrl || contacts.length < 100) break;
+
+    startAfter = meta.startAfter;
+    startAfterId = meta.startAfterId;
   }
+
   return total;
 }
 
@@ -132,38 +165,19 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // Debug endpoint — shows raw GHL API responses
+  // Debug endpoint
   if (url.pathname === '/api/debug') {
     try {
-      const [rawPitch, rawTag, rawAll] = await Promise.all([
-        fetchGHL(`/contacts/?locationId=${LOCATION_ID}&workflowId=${WF_PITCH}&limit=5`),
-        fetchGHL(`/contacts/?locationId=${LOCATION_ID}&tags[]=${encodeURIComponent(TAG_DEMO)}&limit=5`),
-        fetchGHL(`/contacts/?locationId=${LOCATION_ID}&limit=5`)
+      const [wfContacts, allContacts] = await Promise.all([
+        ghlRequest(`/workflows/${WF_PITCH}/contacts?locationId=${LOCATION_ID}&limit=5`),
+        ghlRequest(`/contacts/?locationId=${LOCATION_ID}&limit=5`)
       ]);
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({
-        env: {
-          hasApiKey: !!API_KEY,
-          locationId: LOCATION_ID,
-          wfPitch: WF_PITCH,
-          wfResponse: WF_RESPONSE,
-          tagDemo: TAG_DEMO
-        },
-        pitchWorkflowQuery: {
-          totalReturned: (rawPitch.contacts || []).length,
-          meta: rawPitch.meta || null,
-          firstContact: (rawPitch.contacts || [])[0] || null
-        },
-        tagQuery: {
-          totalReturned: (rawTag.contacts || []).length,
-          meta: rawTag.meta || null,
-          firstContact: (rawTag.contacts || [])[0] || null
-        },
-        allContactsQuery: {
-          totalReturned: (rawAll.contacts || []).length,
-          meta: rawAll.meta || null,
-          firstContactTags: ((rawAll.contacts || [])[0] || {}).tags || null,
-          firstContactWorkflows: ((rawAll.contacts || [])[0] || {}).workflows || null
+        workflowEndpoint: wfContacts,
+        allContactsSample: {
+          total: (allContacts.meta || {}).total,
+          firstTags: ((allContacts.contacts || [])[0] || {}).tags
         }
       }, null, 2));
     } catch (e) {
