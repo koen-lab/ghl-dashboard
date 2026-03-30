@@ -242,7 +242,6 @@
   .badge.purple { background: var(--accent-light); color: var(--accent); }
   .badge.orange { background: var(--orange-light); color: #ea580c; }
 
-  /* History table */
   .history-row {
     display: grid;
     grid-template-columns: 2fr 1fr 1fr 1fr;
@@ -322,18 +321,18 @@
           </div>
         </div>
         <div class="stat-number" id="num-pitch">—</div>
-        <div class="stat-sub">contacts in pitch workflow</div>
+        <div class="stat-sub">all time total</div>
       </div>
 
       <div class="stat-card">
         <div class="stat-header">
-          <span class="stat-label">Responses</span>
+          <span class="stat-label">Explainers Sent</span>
           <div class="stat-icon green">
             <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 3H2v8h3v2.5L8 11h6V3z"/></svg>
           </div>
         </div>
-        <div class="stat-number" id="num-response">—</div>
-        <div class="stat-sub">contacts in response workflow</div>
+        <div class="stat-number" id="num-explainer">—</div>
+        <div class="stat-sub">all time total</div>
       </div>
 
       <div class="stat-card">
@@ -344,7 +343,7 @@
           </div>
         </div>
         <div class="stat-number" id="num-demo">—</div>
-        <div class="stat-sub">tagged as demo booked</div>
+        <div class="stat-sub">all time total</div>
       </div>
     </div>
 
@@ -356,19 +355,19 @@
       <div class="table-row">
         <span>Pitches Sent</span>
         <span id="table-pitch">—</span>
-        <span class="muted">Workflow</span>
+        <span class="muted">Custom Value</span>
         <span><span class="badge purple">Active</span></span>
       </div>
       <div class="table-row">
-        <span>Responses</span>
-        <span id="table-response">—</span>
-        <span class="muted">Workflow</span>
+        <span>Explainers Sent</span>
+        <span id="table-explainer">—</span>
+        <span class="muted">Custom Value</span>
         <span><span class="badge live">Active</span></span>
       </div>
       <div class="table-row">
         <span>Demos Booked</span>
         <span id="table-demo">—</span>
-        <span class="muted">Tag</span>
+        <span class="muted">Custom Value</span>
         <span><span class="badge orange">Active</span></span>
       </div>
     </div>
@@ -377,7 +376,7 @@
       <div class="section-title">Snapshot History</div>
       <div class="table-card">
         <div class="table-header">
-          <span>Date &amp; Time</span><span>Pitches</span><span>Responses</span><span>Demos</span>
+          <span>Date &amp; Time</span><span>Pitches</span><span>Explainers</span><span>Demos</span>
         </div>
         <div id="history-body">
           <div class="empty-history">No history yet — hit Refresh to save your first snapshot.</div>
@@ -395,7 +394,7 @@
     btn.classList.add('spinning');
     document.getElementById('timestamp').textContent = 'Refreshing...';
 
-    ['num-pitch','num-response','num-demo','table-pitch','table-response','table-demo'].forEach(id => {
+    ['num-pitch','num-explainer','num-demo','table-pitch','table-explainer','table-demo'].forEach(id => {
       document.getElementById(id).textContent = '...';
     });
 
@@ -403,10 +402,15 @@
       const res = await fetch('/api/counts');
       const data = await res.json();
 
-      const set = (ids, val) => ids.forEach(id => document.getElementById(id).textContent = val ?? '—');
-      set(['num-pitch',    'table-pitch'],    data.pitches);
-      set(['num-response', 'table-response'], data.responses);
-      set(['num-demo',     'table-demo'],     data.demos);
+      if (data.error) throw new Error(data.error);
+
+      const set = (ids, val) => ids.forEach(id => {
+        document.getElementById(id).textContent = (val !== undefined && val !== null) ? val : '—';
+      });
+
+      set(['num-pitch',     'table-pitch'],     data.pitches);
+      set(['num-explainer', 'table-explainer'], data.explainers);
+      set(['num-demo',      'table-demo'],      data.demos);
 
       const now = new Date();
       document.getElementById('timestamp').textContent =
@@ -415,7 +419,7 @@
 
       await loadHistory();
     } catch(e) {
-      document.getElementById('timestamp').textContent = 'Error loading data — check server logs.';
+      document.getElementById('timestamp').textContent = 'Error: ' + e.message;
     }
 
     btn.disabled = false;
@@ -440,7 +444,7 @@
         return `<div class="history-row">
           <span class="muted">${label}</span>
           <span>${row.pitches ?? '—'}</span>
-          <span>${row.responses ?? '—'}</span>
+          <span>${row.explainers ?? '—'}</span>
           <span>${row.demos ?? '—'}</span>
         </div>`;
       }).join('');
