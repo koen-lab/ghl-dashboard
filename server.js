@@ -29,11 +29,11 @@ async function setupDb() {
   `);
 }
 
-async function fetchGHL(path) {
+async function fetchGHL(urlPath) {
   return new Promise((resolve, reject) => {
     const options = {
       hostname: 'services.leadconnectorhq.com',
-      path,
+      path: urlPath,
       method: 'GET',
       headers: {
         'Authorization': `Bearer ${API_KEY}`,
@@ -46,7 +46,7 @@ async function fetchGHL(path) {
       res.on('data', chunk => data += chunk);
       res.on('end', () => {
         try { resolve(JSON.parse(data)); }
-        catch(e) { reject(e); }
+        catch(e) { reject(new Error('Parse error: ' + data.slice(0, 200))); }
       });
     });
     req.on('error', reject);
@@ -94,14 +94,12 @@ async function getHistory() {
 const server = http.createServer(async (req, res) => {
   const url = new URL(req.url, `http://localhost`);
 
-  // Serve dashboard HTML
   if (url.pathname === '/' || url.pathname === '/index.html') {
     const file = fs.readFileSync(path.join(__dirname, 'index.html'));
     res.writeHead(200, { 'Content-Type': 'text/html' });
     return res.end(file);
   }
 
-  // API: get current counts
   if (url.pathname === '/api/counts') {
     try {
       const [pitches, responses, demos] = await Promise.all([
@@ -109,15 +107,12 @@ const server = http.createServer(async (req, res) => {
         fetchWorkflowCount(WF_RESPONSE),
         fetchTagCount(TAG_DEMO)
       ]);
-
-      // Save snapshot to DB
       if (pool) {
         await pool.query(
           'INSERT INTO snapshots (pitches, responses, demos) VALUES ($1, $2, $3)',
           [pitches, responses, demos]
         );
       }
-
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ pitches, responses, demos, ts: new Date().toISOString() }));
     } catch (e) {
@@ -126,12 +121,51 @@ const server = http.createServer(async (req, res) => {
     }
   }
 
-  // API: get history
   if (url.pathname === '/api/history') {
     try {
       const rows = await getHistory();
       res.writeHead(200, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify(rows));
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({ error: e.message }));
+    }
+  }
+
+  // Debug endpoint — shows raw GHL API responses
+  if (url.pathname === '/api/debug') {
+    try {
+      const [rawPitch, rawTag, rawAll] = await Promise.all([
+        fetchGHL(`/contacts/?locationId=${LOCATION_ID}&workflowId=${WF_PITCH}&limit=5`),
+        fetchGHL(`/contacts/?locationId=${LOCATION_ID}&tags[]=${encodeURIComponent(TAG_DEMO)}&limit=5`),
+        fetchGHL(`/contacts/?locationId=${LOCATION_ID}&limit=5`)
+      ]);
+      res.writeHead(200, { 'Content-Type': 'application/json' });
+      return res.end(JSON.stringify({
+        env: {
+          hasApiKey: !!API_KEY,
+          locationId: LOCATION_ID,
+          wfPitch: WF_PITCH,
+          wfResponse: WF_RESPONSE,
+          tagDemo: TAG_DEMO
+        },
+        pitchWorkflowQuery: {
+          totalReturned: (rawPitch.contacts || []).length,
+          meta: rawPitch.meta || null,
+          firstContact: (rawPitch.contacts || [])[0] || null
+        },
+        tagQuery: {
+          totalReturned: (rawTag.contacts || []).length,
+          meta: rawTag.meta || null,
+          firstContact: (rawTag.contacts || [])[0] || null
+        },
+        allContactsQuery: {
+          totalReturned: (rawAll.contacts || []).length,
+          meta: rawAll.meta || null,
+          firstContactTags: ((rawAll.contacts || [])[0] || {}).tags || null,
+          firstContactWorkflows: ((rawAll.contacts || [])[0] || {}).workflows || null
+        }
+      }, null, 2));
     } catch (e) {
       res.writeHead(500, { 'Content-Type': 'application/json' });
       return res.end(JSON.stringify({ error: e.message }));
