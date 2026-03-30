@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>GHL Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg: #0a0a0f;
+    --surface: #13131a;
+    --border: #1e1e2e;
+    --accent-pitch: #6ee7b7;
+    --accent-response: #818cf8;
+    --accent-demo: #fb923c;
+    --text-primary: #f1f5f9;
+    --text-muted: #64748b;
+    --text-dim: #334155;
+    --mono: 'DM Mono', monospace;
+    --display: 'Syne', sans-serif;
+  }
+
+  body {
+    background: var(--bg);
+    color: var(--text-primary);
+    font-family: var(--mono);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 32px 20px;
+  }
+
+  .header {
+    text-align: center;
+    margin-bottom: 48px;
+  }
+
+  .header h1 {
+    font-family: var(--display);
+    font-size: 13px;
+    font-weight: 600;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 8px;
+  }
+
+  .header .title {
+    font-family: var(--display);
+    font-size: 36px;
+    font-weight: 800;
+    color: var(--text-primary);
+    line-height: 1;
+  }
+
+  .cards {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    width: 100%;
+    max-width: 860px;
+    margin-bottom: 32px;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 16px;
+    padding: 28px 24px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s;
+  }
+
+  .card::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+    border-radius: 16px 16px 0 0;
+  }
+
+  .card.pitch::before  { background: var(--accent-pitch); }
+  .card.response::before { background: var(--accent-response); }
+  .card.demo::before   { background: var(--accent-demo); }
+
+  .card:hover { border-color: #2a2a3e; }
+
+  .card-label {
+    font-size: 10px;
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    color: var(--text-muted);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .card-label .dot {
+    width: 6px; height: 6px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  .pitch .dot   { background: var(--accent-pitch); }
+  .response .dot { background: var(--accent-response); }
+  .demo .dot    { background: var(--accent-demo); }
+
+  .card-number {
+    font-family: var(--display);
+    font-size: 64px;
+    font-weight: 800;
+    line-height: 1;
+    margin-bottom: 8px;
+    transition: opacity 0.3s;
+  }
+
+  .pitch    .card-number { color: var(--accent-pitch); }
+  .response .card-number { color: var(--accent-response); }
+  .demo     .card-number { color: var(--accent-demo); }
+
+  .card-sub {
+    font-size: 11px;
+    color: var(--text-muted);
+    letter-spacing: 0.05em;
+  }
+
+  .loading .card-number { opacity: 0.3; }
+
+  .shimmer {
+    display: inline-block;
+    width: 60px; height: 64px;
+    background: linear-gradient(90deg, var(--border) 25%, #1e1e2e 50%, var(--border) 75%);
+    background-size: 200% 100%;
+    animation: shimmer 1.2s infinite;
+    border-radius: 8px;
+    vertical-align: middle;
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+  }
+
+  .error-text {
+    font-size: 28px;
+    color: #ef4444;
+  }
+
+  .footer {
+    display: flex;
+    align-items: center;
+    gap: 20px;
+  }
+
+  .refresh-btn {
+    background: none;
+    border: 1px solid var(--border);
+    color: var(--text-muted);
+    font-family: var(--mono);
+    font-size: 11px;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 10px 20px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .refresh-btn:hover {
+    border-color: #334155;
+    color: var(--text-primary);
+  }
+
+  .refresh-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .refresh-btn svg {
+    width: 12px; height: 12px;
+    transition: transform 0.6s;
+  }
+
+  .refresh-btn.spinning svg {
+    animation: spin 0.8s linear infinite;
+  }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .last-updated {
+    font-size: 10px;
+    color: var(--text-dim);
+    letter-spacing: 0.08em;
+  }
+
+  @media (max-width: 640px) {
+    .cards { grid-template-columns: 1fr; }
+    .card-number { font-size: 48px; }
+    .title { font-size: 28px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Sub-account overview</h1>
+  <div class="title">Pipeline Dashboard</div>
+</div>
+
+<div class="cards">
+  <div class="card pitch" id="card-pitch">
+    <div class="card-label"><span class="dot"></span>Workflow — Pitch</div>
+    <div class="card-number" id="num-pitch"><div class="shimmer"></div></div>
+    <div class="card-sub">contacts enrolled</div>
+  </div>
+
+  <div class="card response" id="card-response">
+    <div class="card-label"><span class="dot"></span>Workflow — Response</div>
+    <div class="card-number" id="num-response"><div class="shimmer"></div></div>
+    <div class="card-sub">contacts enrolled</div>
+  </div>
+
+  <div class="card demo" id="card-demo">
+    <div class="card-label"><span class="dot"></span>Tag — Demo</div>
+    <div class="card-number" id="num-demo"><div class="shimmer"></div></div>
+    <div class="card-sub">demos booked</div>
+  </div>
+</div>
+
+<div class="footer">
+  <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">
+    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2"/>
+      <polyline points="13.5 2 13.5 4.7 10.8 4.7"/>
+    </svg>
+    Refresh
+  </button>
+  <div class="last-updated" id="last-updated"></div>
+</div>
+
+<script>
+  const API_KEY     = 'pit-edce6edf-183e-467c-8166-3afb78823828';
+  const LOCATION_ID = 'twGLXC0emkYWk8iSH4iI';
+  const WF_PITCH    = 'a281a4d8-9fc9-4dc4-9055-c57ba6a237e9';
+  const WF_RESPONSE = '8e269349-434b-492f-b94f-a1f74dd74f92';
+  const TAG_DEMO    = 'demo';
+
+  const headers = {
+    'Authorization': `Bearer ${API_KEY}`,
+    'Version': '2021-07-28',
+    'Content-Type': 'application/json'
+  };
+
+  function setNum(id, value) {
+    document.getElementById(id).textContent = value;
+  }
+
+  function setError(id) {
+    document.getElementById(id).innerHTML = '<span class="error-text">—</span>';
+  }
+
+  async function fetchWorkflowCount(workflowId) {
+    let total = 0;
+    let page = 1;
+    const limit = 100;
+
+    while (true) {
+      const url = `https://services.leadconnectorhq.com/contacts/?locationId=${LOCATION_ID}&workflowId=${workflowId}&limit=${limit}&skip=${(page - 1) * limit}`;
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const contacts = data.contacts || [];
+      total += contacts.length;
+      if (contacts.length < limit) break;
+      page++;
+    }
+    return total;
+  }
+
+  async function fetchTagCount(tag) {
+    let total = 0;
+    let page = 1;
+    const limit = 100;
+
+    while (true) {
+      const url = `https://services.leadconnectorhq.com/contacts/?locationId=${LOCATION_ID}&tags[]=${encodeURIComponent(tag)}&limit=${limit}&skip=${(page - 1) * limit}`;
+      const res = await fetch(url, { headers });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+      const data = await res.json();
+      const contacts = data.contacts || [];
+      total += contacts.length;
+      if (contacts.length < limit) break;
+      page++;
+    }
+    return total;
+  }
+
+  async function loadAll() {
+    const btn = document.getElementById('refresh-btn');
+    btn.disabled = true;
+    btn.classList.add('spinning');
+
+    // Reset to shimmer
+    ['num-pitch', 'num-response', 'num-demo'].forEach(id => {
+      document.getElementById(id).innerHTML = '<div class="shimmer"></div>';
+    });
+
+    const [pitchResult, responseResult, demoResult] = await Promise.allSettled([
+      fetchWorkflowCount(WF_PITCH),
+      fetchWorkflowCount(WF_RESPONSE),
+      fetchTagCount(TAG_DEMO)
+    ]);
+
+    pitchResult.status    === 'fulfilled' ? setNum('num-pitch',    pitchResult.value)    : setError('num-pitch');
+    responseResult.status === 'fulfilled' ? setNum('num-response', responseResult.value) : setError('num-response');
+    demoResult.status     === 'fulfilled' ? setNum('num-demo',     demoResult.value)     : setError('num-demo');
+
+    const now = new Date();
+    document.getElementById('last-updated').textContent =
+      `Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+
+    btn.disabled = false;
+    btn.classList.remove('spinning');
+  }
+
+  loadAll();
+</script>
+</body>
+</html>
