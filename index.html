@@ -3,333 +3,448 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>GHL Dashboard</title>
-<link href="https://fonts.googleapis.com/css2?family=DM+Mono:wght@400;500&family=Syne:wght@600;700;800&display=swap" rel="stylesheet">
+<title>Pipeline Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
 <style>
   *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
 
   :root {
-    --bg: #0a0a0f;
-    --surface: #13131a;
-    --border: #1e1e2e;
-    --accent-pitch: #6ee7b7;
-    --accent-response: #818cf8;
-    --accent-demo: #fb923c;
-    --text-primary: #f1f5f9;
-    --text-muted: #64748b;
-    --text-dim: #334155;
-    --mono: 'DM Mono', monospace;
-    --display: 'Syne', sans-serif;
+    --bg: #f6f8fa;
+    --surface: #ffffff;
+    --border: #e2e8f0;
+    --border-hover: #cbd5e1;
+    --text-primary: #0f172a;
+    --text-secondary: #64748b;
+    --text-tertiary: #94a3b8;
+    --accent: #635bff;
+    --accent-light: #ede9ff;
+    --green: #22c55e;
+    --green-light: #dcfce7;
+    --orange: #f97316;
+    --orange-light: #ffedd5;
+    --radius: 12px;
+    --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+    --shadow-md: 0 4px 6px -1px rgba(0,0,0,0.07), 0 2px 4px -1px rgba(0,0,0,0.04);
   }
 
   body {
+    font-family: 'Inter', -apple-system, sans-serif;
     background: var(--bg);
     color: var(--text-primary);
-    font-family: var(--mono);
     min-height: 100vh;
+  }
+
+  .layout { display: flex; min-height: 100vh; }
+
+  .sidebar {
+    width: 220px;
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 16px;
     display: flex;
     flex-direction: column;
-    align-items: center;
-    justify-content: center;
-    padding: 32px 20px;
-  }
-
-  .header {
-    text-align: center;
-    margin-bottom: 48px;
-  }
-
-  .header h1 {
-    font-family: var(--display);
-    font-size: 13px;
-    font-weight: 600;
-    letter-spacing: 0.2em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 8px;
-  }
-
-  .header .title {
-    font-family: var(--display);
-    font-size: 36px;
-    font-weight: 800;
-    color: var(--text-primary);
-    line-height: 1;
-  }
-
-  .cards {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
-    gap: 16px;
-    width: 100%;
-    max-width: 860px;
-    margin-bottom: 32px;
-  }
-
-  .card {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 16px;
-    padding: 28px 24px;
-    position: relative;
-    overflow: hidden;
-    transition: border-color 0.2s;
-  }
-
-  .card::before {
-    content: '';
-    position: absolute;
-    top: 0; left: 0; right: 0;
-    height: 2px;
-    border-radius: 16px 16px 0 0;
-  }
-
-  .card.pitch::before  { background: var(--accent-pitch); }
-  .card.response::before { background: var(--accent-response); }
-  .card.demo::before   { background: var(--accent-demo); }
-
-  .card:hover { border-color: #2a2a3e; }
-
-  .card-label {
-    font-size: 10px;
-    letter-spacing: 0.18em;
-    text-transform: uppercase;
-    color: var(--text-muted);
-    margin-bottom: 20px;
-    display: flex;
-    align-items: center;
-    gap: 8px;
-  }
-
-  .card-label .dot {
-    width: 6px; height: 6px;
-    border-radius: 50%;
+    gap: 4px;
     flex-shrink: 0;
   }
 
-  .pitch .dot   { background: var(--accent-pitch); }
-  .response .dot { background: var(--accent-response); }
-  .demo .dot    { background: var(--accent-demo); }
-
-  .card-number {
-    font-family: var(--display);
-    font-size: 64px;
-    font-weight: 800;
-    line-height: 1;
-    margin-bottom: 8px;
-    transition: opacity 0.3s;
+  .sidebar-logo {
+    font-size: 15px;
+    font-weight: 600;
+    color: var(--text-primary);
+    padding: 8px 12px;
+    margin-bottom: 16px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
   }
 
-  .pitch    .card-number { color: var(--accent-pitch); }
-  .response .card-number { color: var(--accent-response); }
-  .demo     .card-number { color: var(--accent-demo); }
+  .logo-dot {
+    width: 24px; height: 24px;
+    background: var(--accent);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+  }
 
-  .card-sub {
+  .logo-dot svg { width: 14px; height: 14px; }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 8px 12px;
+    border-radius: 8px;
+    font-size: 13.5px;
+    font-weight: 500;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all 0.15s;
+  }
+
+  .nav-item:hover { background: var(--bg); color: var(--text-primary); }
+  .nav-item.active { background: var(--accent-light); color: var(--accent); }
+  .nav-item svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  .sidebar-section {
     font-size: 11px;
-    color: var(--text-muted);
+    font-weight: 600;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--text-tertiary);
+    padding: 16px 12px 6px;
+  }
+
+  .main { flex: 1; padding: 32px 40px; overflow-y: auto; }
+
+  .topbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 8px;
+  }
+
+  .topbar-left h1 { font-size: 20px; font-weight: 600; }
+  .topbar-left p { font-size: 13.5px; color: var(--text-secondary); margin-top: 2px; }
+
+  .btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 8px 14px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-primary);
+    transition: all 0.15s;
+    box-shadow: var(--shadow);
+    font-family: 'Inter', sans-serif;
+  }
+
+  .btn:hover { border-color: var(--border-hover); background: var(--bg); }
+  .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .btn svg { width: 14px; height: 14px; }
+  .btn.spinning svg { animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  .timestamp-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 12px;
+    color: var(--text-tertiary);
+    margin-bottom: 28px;
+    margin-top: 8px;
+  }
+
+  .status-dot { width: 6px; height: 6px; background: var(--green); border-radius: 50%; }
+
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+
+  .stat-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 24px;
+    box-shadow: var(--shadow);
+    transition: box-shadow 0.2s;
+  }
+
+  .stat-card:hover { box-shadow: var(--shadow-md); }
+
+  .stat-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 16px;
+  }
+
+  .stat-label { font-size: 13px; font-weight: 500; color: var(--text-secondary); }
+
+  .stat-icon {
+    width: 32px; height: 32px;
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+  }
+
+  .stat-icon svg { width: 16px; height: 16px; }
+  .stat-icon.purple { background: var(--accent-light); color: var(--accent); }
+  .stat-icon.green  { background: var(--green-light);  color: var(--green); }
+  .stat-icon.orange { background: var(--orange-light); color: var(--orange); }
+
+  .stat-number {
+    font-size: 36px;
+    font-weight: 600;
+    letter-spacing: -0.02em;
+    line-height: 1;
+    margin-bottom: 6px;
+  }
+
+  .stat-sub { font-size: 12px; color: var(--text-tertiary); }
+
+  .section-title { font-size: 15px; font-weight: 600; margin-bottom: 16px; }
+
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 32px;
+  }
+
+  .table-header {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--bg);
+  }
+
+  .table-header span {
+    font-size: 11.5px;
+    font-weight: 600;
+    color: var(--text-tertiary);
+    text-transform: uppercase;
     letter-spacing: 0.05em;
   }
 
-  .loading .card-number { opacity: 0.3; }
-
-  .shimmer {
-    display: inline-block;
-    width: 60px; height: 64px;
-    background: linear-gradient(90deg, var(--border) 25%, #1e1e2e 50%, var(--border) 75%);
-    background-size: 200% 100%;
-    animation: shimmer 1.2s infinite;
-    border-radius: 8px;
-    vertical-align: middle;
-  }
-
-  @keyframes shimmer {
-    0%   { background-position: 200% 0; }
-    100% { background-position: -200% 0; }
-  }
-
-  .error-text {
-    font-size: 28px;
-    color: #ef4444;
-  }
-
-  .footer {
-    display: flex;
+  .table-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 14px 20px;
+    border-bottom: 1px solid var(--border);
     align-items: center;
-    gap: 20px;
+    transition: background 0.1s;
   }
 
-  .refresh-btn {
-    background: none;
-    border: 1px solid var(--border);
-    color: var(--text-muted);
-    font-family: var(--mono);
-    font-size: 11px;
-    letter-spacing: 0.12em;
-    text-transform: uppercase;
-    padding: 10px 20px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: all 0.2s;
-    display: flex;
+  .table-row:last-child { border-bottom: none; }
+  .table-row:hover { background: var(--bg); }
+  .table-row span { font-size: 13.5px; }
+  .table-row .muted { color: var(--text-secondary); font-size: 13px; }
+
+  .badge {
+    display: inline-flex;
     align-items: center;
-    gap: 8px;
+    padding: 3px 8px;
+    border-radius: 20px;
+    font-size: 11.5px;
+    font-weight: 500;
   }
 
-  .refresh-btn:hover {
-    border-color: #334155;
-    color: var(--text-primary);
+  .badge.live   { background: var(--green-light);  color: #16a34a; }
+  .badge.purple { background: var(--accent-light); color: var(--accent); }
+  .badge.orange { background: var(--orange-light); color: #ea580c; }
+
+  /* History table */
+  .history-row {
+    display: grid;
+    grid-template-columns: 2fr 1fr 1fr 1fr;
+    padding: 12px 20px;
+    border-bottom: 1px solid var(--border);
+    align-items: center;
+    transition: background 0.1s;
   }
 
-  .refresh-btn:disabled {
-    opacity: 0.4;
-    cursor: not-allowed;
+  .history-row:last-child { border-bottom: none; }
+  .history-row:hover { background: var(--bg); }
+  .history-row span { font-size: 13px; color: var(--text-primary); }
+  .history-row .muted { color: var(--text-secondary); }
+
+  .empty-history {
+    padding: 32px 20px;
+    text-align: center;
+    font-size: 13px;
+    color: var(--text-tertiary);
   }
 
-  .refresh-btn svg {
-    width: 12px; height: 12px;
-    transition: transform 0.6s;
-  }
-
-  .refresh-btn.spinning svg {
-    animation: spin 0.8s linear infinite;
-  }
-
-  @keyframes spin { to { transform: rotate(360deg); } }
-
-  .last-updated {
-    font-size: 10px;
-    color: var(--text-dim);
-    letter-spacing: 0.08em;
-  }
-
-  @media (max-width: 640px) {
-    .cards { grid-template-columns: 1fr; }
-    .card-number { font-size: 48px; }
-    .title { font-size: 28px; }
+  @media (max-width: 900px) {
+    .sidebar { display: none; }
+    .main { padding: 20px; }
+    .stats-grid { grid-template-columns: 1fr; }
   }
 </style>
 </head>
 <body>
+<div class="layout">
 
-<div class="header">
-  <h1>Sub-account overview</h1>
-  <div class="title">Pipeline Dashboard</div>
-</div>
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-dot">
+        <svg viewBox="0 0 14 14" fill="none"><path d="M2 7h10M7 2v10" stroke="#fff" stroke-width="2" stroke-linecap="round"/></svg>
+      </div>
+      Pipeline
+    </div>
+    <div class="sidebar-section">Overview</div>
+    <div class="nav-item active">
+      <svg viewBox="0 0 16 16" fill="currentColor"><rect x="1" y="1" width="6" height="6" rx="1.5"/><rect x="9" y="1" width="6" height="6" rx="1.5"/><rect x="1" y="9" width="6" height="6" rx="1.5"/><rect x="9" y="9" width="6" height="6" rx="1.5"/></svg>
+      Dashboard
+    </div>
+    <div class="sidebar-section">Data</div>
+    <div class="nav-item" onclick="document.getElementById('history-section').scrollIntoView({behavior:'smooth'})">
+      <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M2 12l3.5-4 3 3L12 5"/></svg>
+      History
+    </div>
+  </aside>
 
-<div class="cards">
-  <div class="card pitch" id="card-pitch">
-    <div class="card-label"><span class="dot"></span>Workflow — Pitch</div>
-    <div class="card-number" id="num-pitch"><div class="shimmer"></div></div>
-    <div class="card-sub">contacts enrolled</div>
-  </div>
+  <main class="main">
+    <div class="topbar">
+      <div class="topbar-left">
+        <h1>Dashboard</h1>
+        <p>Track your pipeline performance in real time.</p>
+      </div>
+      <button class="btn" id="refresh-btn" onclick="loadAll()">
+        <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round">
+          <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2"/>
+          <polyline points="13.5 2 13.5 4.7 10.8 4.7"/>
+        </svg>
+        Refresh
+      </button>
+    </div>
 
-  <div class="card response" id="card-response">
-    <div class="card-label"><span class="dot"></span>Workflow — Response</div>
-    <div class="card-number" id="num-response"><div class="shimmer"></div></div>
-    <div class="card-sub">contacts enrolled</div>
-  </div>
+    <div class="timestamp-bar">
+      <div class="status-dot"></div>
+      <span id="timestamp">Loading data...</span>
+    </div>
 
-  <div class="card demo" id="card-demo">
-    <div class="card-label"><span class="dot"></span>Tag — Demo</div>
-    <div class="card-number" id="num-demo"><div class="shimmer"></div></div>
-    <div class="card-sub">demos booked</div>
-  </div>
-</div>
+    <div class="stats-grid">
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Pitches Sent</span>
+          <div class="stat-icon purple">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M2 4l6 4 6-4M2 4v8h12V4"/></svg>
+          </div>
+        </div>
+        <div class="stat-number" id="num-pitch">—</div>
+        <div class="stat-sub">contacts in pitch workflow</div>
+      </div>
 
-<div class="footer">
-  <button class="refresh-btn" id="refresh-btn" onclick="loadAll()">
-    <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round">
-      <path d="M13.5 8A5.5 5.5 0 1 1 8 2.5c1.8 0 3.4.87 4.4 2.2"/>
-      <polyline points="13.5 2 13.5 4.7 10.8 4.7"/>
-    </svg>
-    Refresh
-  </button>
-  <div class="last-updated" id="last-updated"></div>
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Responses</span>
+          <div class="stat-icon green">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M14 3H2v8h3v2.5L8 11h6V3z"/></svg>
+          </div>
+        </div>
+        <div class="stat-number" id="num-response">—</div>
+        <div class="stat-sub">contacts in response workflow</div>
+      </div>
+
+      <div class="stat-card">
+        <div class="stat-header">
+          <span class="stat-label">Demos Booked</span>
+          <div class="stat-icon orange">
+            <svg viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><rect x="2" y="3" width="12" height="11" rx="1.5"/><path d="M5 2v2M11 2v2M2 7h12"/></svg>
+          </div>
+        </div>
+        <div class="stat-number" id="num-demo">—</div>
+        <div class="stat-sub">tagged as demo booked</div>
+      </div>
+    </div>
+
+    <div class="section-title">Pipeline Summary</div>
+    <div class="table-card">
+      <div class="table-header">
+        <span>Metric</span><span>Count</span><span>Type</span><span>Status</span>
+      </div>
+      <div class="table-row">
+        <span>Pitches Sent</span>
+        <span id="table-pitch">—</span>
+        <span class="muted">Workflow</span>
+        <span><span class="badge purple">Active</span></span>
+      </div>
+      <div class="table-row">
+        <span>Responses</span>
+        <span id="table-response">—</span>
+        <span class="muted">Workflow</span>
+        <span><span class="badge live">Active</span></span>
+      </div>
+      <div class="table-row">
+        <span>Demos Booked</span>
+        <span id="table-demo">—</span>
+        <span class="muted">Tag</span>
+        <span><span class="badge orange">Active</span></span>
+      </div>
+    </div>
+
+    <div id="history-section">
+      <div class="section-title">Snapshot History</div>
+      <div class="table-card">
+        <div class="table-header">
+          <span>Date &amp; Time</span><span>Pitches</span><span>Responses</span><span>Demos</span>
+        </div>
+        <div id="history-body">
+          <div class="empty-history">No history yet — hit Refresh to save your first snapshot.</div>
+        </div>
+      </div>
+    </div>
+
+  </main>
 </div>
 
 <script>
-  const API_KEY     = 'pit-edce6edf-183e-467c-8166-3afb78823828';
-  const LOCATION_ID = 'twGLXC0emkYWk8iSH4iI';
-  const WF_PITCH    = 'a281a4d8-9fc9-4dc4-9055-c57ba6a237e9';
-  const WF_RESPONSE = '8e269349-434b-492f-b94f-a1f74dd74f92';
-  const TAG_DEMO    = 'demo';
-
-  const headers = {
-    'Authorization': `Bearer ${API_KEY}`,
-    'Version': '2021-07-28',
-    'Content-Type': 'application/json'
-  };
-
-  function setNum(id, value) {
-    document.getElementById(id).textContent = value;
-  }
-
-  function setError(id) {
-    document.getElementById(id).innerHTML = '<span class="error-text">—</span>';
-  }
-
-  async function fetchWorkflowCount(workflowId) {
-    let total = 0;
-    let page = 1;
-    const limit = 100;
-
-    while (true) {
-      const url = `https://services.leadconnectorhq.com/contacts/?locationId=${LOCATION_ID}&workflowId=${workflowId}&limit=${limit}&skip=${(page - 1) * limit}`;
-      const res = await fetch(url, { headers });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const contacts = data.contacts || [];
-      total += contacts.length;
-      if (contacts.length < limit) break;
-      page++;
-    }
-    return total;
-  }
-
-  async function fetchTagCount(tag) {
-    let total = 0;
-    let page = 1;
-    const limit = 100;
-
-    while (true) {
-      const url = `https://services.leadconnectorhq.com/contacts/?locationId=${LOCATION_ID}&tags[]=${encodeURIComponent(tag)}&limit=${limit}&skip=${(page - 1) * limit}`;
-      const res = await fetch(url, { headers });
-      if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      const data = await res.json();
-      const contacts = data.contacts || [];
-      total += contacts.length;
-      if (contacts.length < limit) break;
-      page++;
-    }
-    return total;
-  }
-
   async function loadAll() {
     const btn = document.getElementById('refresh-btn');
     btn.disabled = true;
     btn.classList.add('spinning');
+    document.getElementById('timestamp').textContent = 'Refreshing...';
 
-    // Reset to shimmer
-    ['num-pitch', 'num-response', 'num-demo'].forEach(id => {
-      document.getElementById(id).innerHTML = '<div class="shimmer"></div>';
+    ['num-pitch','num-response','num-demo','table-pitch','table-response','table-demo'].forEach(id => {
+      document.getElementById(id).textContent = '...';
     });
 
-    const [pitchResult, responseResult, demoResult] = await Promise.allSettled([
-      fetchWorkflowCount(WF_PITCH),
-      fetchWorkflowCount(WF_RESPONSE),
-      fetchTagCount(TAG_DEMO)
-    ]);
+    try {
+      const res = await fetch('/api/counts');
+      const data = await res.json();
 
-    pitchResult.status    === 'fulfilled' ? setNum('num-pitch',    pitchResult.value)    : setError('num-pitch');
-    responseResult.status === 'fulfilled' ? setNum('num-response', responseResult.value) : setError('num-response');
-    demoResult.status     === 'fulfilled' ? setNum('num-demo',     demoResult.value)     : setError('num-demo');
+      const set = (ids, val) => ids.forEach(id => document.getElementById(id).textContent = val ?? '—');
+      set(['num-pitch',    'table-pitch'],    data.pitches);
+      set(['num-response', 'table-response'], data.responses);
+      set(['num-demo',     'table-demo'],     data.demos);
 
-    const now = new Date();
-    document.getElementById('last-updated').textContent =
-      `Updated ${now.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      const now = new Date();
+      document.getElementById('timestamp').textContent =
+        'Last refreshed ' + now.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+        ' at ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+
+      await loadHistory();
+    } catch(e) {
+      document.getElementById('timestamp').textContent = 'Error loading data — check server logs.';
+    }
 
     btn.disabled = false;
     btn.classList.remove('spinning');
+  }
+
+  async function loadHistory() {
+    try {
+      const res = await fetch('/api/history');
+      const rows = await res.json();
+      const body = document.getElementById('history-body');
+
+      if (!rows.length) {
+        body.innerHTML = '<div class="empty-history">No history yet.</div>';
+        return;
+      }
+
+      body.innerHTML = rows.map(row => {
+        const d = new Date(row.captured_at);
+        const label = d.toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) +
+          ' ' + d.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+        return `<div class="history-row">
+          <span class="muted">${label}</span>
+          <span>${row.pitches ?? '—'}</span>
+          <span>${row.responses ?? '—'}</span>
+          <span>${row.demos ?? '—'}</span>
+        </div>`;
+      }).join('');
+    } catch(e) {}
   }
 
   loadAll();
